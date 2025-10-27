@@ -1,163 +1,215 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rabbit Kingdom 🐇</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #5b0fff, #9d4eff);
-      color: white;
-      text-align: center;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
+  <head>
+    <title>Rabbit Kingdom 🐇</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: linear-gradient(135deg, #4b00ff, #9b4dff);
+        color: white;
+        text-align: center;
+        font-family: 'Poppins', sans-serif;
+        height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 420px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+      }
+      h2 {
+        margin-bottom: 10px;
+      }
+      button {
+        background: white;
+        color: #4b00ff;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+      }
+      button:hover {
+        transform: scale(1.05);
+        background: #ffdaff;
+      }
+      nav {
+        display: flex;
+        justify-content: space-around;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px;
+        border-top: 2px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(5px);
+      }
+      nav button {
+        flex: 1;
+        background: transparent;
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 12px 0;
+      }
+      .active {
+        border-bottom: 3px solid white;
+      }
+      input {
+        border: none;
+        padding: 8px;
+        border-radius: 10px;
+        width: 90%;
+        text-align: center;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 10px;
+      }
+      li {
+        background: rgba(255,255,255,0.1);
+        margin: 5px 0;
+        border-radius: 8px;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="content">
+      <div class="card" id="content"></div>
+    </div>
+    <nav>
+      <button id="homeTab" class="active">Home</button>
+      <button id="earnTab">Earn</button>
+      <button id="friendsTab">Friends</button>
+      <button id="leaderboardTab">Leaderboard</button>
+    </nav>
 
-    /* Tabs at bottom */
-    .tab-bar {
-      display: flex;
-      justify-content: space-around;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 10px 0;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      backdrop-filter: blur(10px);
-    }
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      const tg = window.Telegram.WebApp;
+      tg.expand();
 
-    .tab-bar button {
-      flex: 1;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 16px;
-      padding: 8px;
-    }
+      const backend = "https://telegram-backend-uxd1.onrender.com";
+      const urlParams = new URLSearchParams(window.location.search);
+      const referrer = urlParams.get("start");
 
-    .tab-bar button.active {
-      border-top: 2px solid #fff;
-      font-weight: bold;
-    }
+      const user = tg.initDataUnsafe?.user || { id: Date.now(), username: "Guest", first_name: "Rabbit", is_premium: false };
 
-    .tab-content {
-      flex: 1;
-      padding: 20px;
-      display: none;
-    }
+      async function loginUser() {
+        await fetch(`${backend}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: user.id,
+            username: user.username,
+            name: user.first_name,
+            is_premium: user.is_premium,
+            referrer: referrer
+          })
+        });
+      }
+      loginUser();
 
-    .tab-content.active {
-      display: block;
-    }
+      const content = document.getElementById("content");
 
-    .btn {
-      background-color: white;
-      color: #5b0fff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+      // 🏠 HOME TAB
+      function showHome() {
+        content.innerHTML = `
+          <h2>🐇 Welcome, ${user.first_name}!</h2>
+          <p>${user.is_premium ? "🌟 Telegram Premium User" : "✨ Regular User"}</p>
+          <p>Explore Rabbit Kingdom, complete tasks, invite friends, and rise to the top!</p>
+        `;
+      }
 
-    .btn:active {
-      transform: scale(0.97);
-    }
-  </style>
-</head>
-<body>
-  <div id="home" class="tab-content active">
-    <h2>🐇 Rabbit Kingdom</h2>
-    <p id="userInfo">Loading Telegram data...</p>
-    <p id="coins">💰 Coins: 0</p>
-  </div>
+      // 💰 EARN TAB
+      function showEarn() {
+        content.innerHTML = `
+          <h2>💰 Earn Coins</h2>
+          <p id="coins">Loading...</p>
+          <button id="earnBtn">Tap to Earn +10</button>
+        `;
+        fetch(`${backend}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: user.id })
+        })
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById("coins").innerText = "💰 Coins: " + data.coins;
+          });
 
-  <div id="earn" class="tab-content">
-    <h2>🎯 Earn Coins</h2>
-    <p>Tap the button below to earn 10 coins!</p>
-    <button class="btn" id="earnBtn">Tap to Earn</button>
-  </div>
+        document.getElementById("earnBtn").onclick = () => {
+          fetch(`${backend}/api/earn`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: user.id, points: 10 })
+          })
+            .then(res => res.json())
+            .then(data => {
+              document.getElementById("coins").innerText = "💰 Coins: " + data.coins;
+            });
+        };
+      }
 
-  <div id="friends" class="tab-content">
-    <h2>👥 Friends</h2>
-    <p>Invite friends using your referral link:</p>
-    <p id="refLink"></p>
-  </div>
+      // 👬 FRIENDS TAB
+      function showFriends() {
+        const referral = `https://t.me/Rabbitkingdom_bot?start=${user.id}`;
+        content.innerHTML = `
+          <h2>👬 Invite Friends</h2>
+          <p>Earn 5,000 coins for normal users and 15,000 for premium users.</p>
+          <input type="text" value="${referral}" readonly>
+          <p>Share this link to your friends!</p>
+        `;
+      }
 
-  <div id="leaderboard" class="tab-content">
-    <h2>🏆 Leaderboard</h2>
-    <ul id="leaderList"></ul>
-  </div>
+      // 🏆 LEADERBOARD TAB
+      function showLeaderboard() {
+        content.innerHTML = `<h2>🏆 Leaderboard</h2><p id="totalPlayers">Loading...</p><ul id="lb"></ul>`;
+        fetch(`${backend}/api/leaderboard`)
+          .then(res => res.json())
+          .then(resData => {
+            document.getElementById("totalPlayers").innerText = `👥 Total Players: ${resData.total}`;
+            const users = resData.users;
+            const lb = document.getElementById("lb");
+            lb.innerHTML = users.map((u, i) => `<li>#${i + 1} ${u.name} — ${u.coins} 💰</li>`).join("");
+          });
+      }
 
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="home">Home</button>
-    <button class="tab-btn" data-tab="earn">Earn</button>
-    <button class="tab-btn" data-tab="friends">Friends</button>
-    <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
-  </div>
-
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
-    const user = tg.initDataUnsafe?.user;
-    const userId = user?.id || Math.floor(Math.random() * 10000);
-    let coins = parseInt(localStorage.getItem("coins") || "0");
-
-    // Display user info
-    if (user) {
-      document.getElementById("userInfo").innerText =
-        `Hello, ${user.first_name} (@${user.username || "guest"})`;
-    } else {
-      document.getElementById("userInfo").innerText = "Unable to fetch user.";
-    }
-
-    // Load coins
-    document.getElementById("coins").innerText = "💰 Coins: " + coins;
-
-    // Earn coins
-    document.getElementById("earnBtn").addEventListener("click", () => {
-      coins += 10;
-      localStorage.setItem("coins", coins);
-      document.getElementById("coins").innerText = "💰 Coins: " + coins;
-      tg.HapticFeedback.notificationOccurred("success");
-    });
-
-    // Referral link
-    const link = `https://t.me/Rabbitkingdom_bot?start=${userId}`;
-    document.getElementById("refLink").innerText = link;
-
-    // Tabs switching
-    const buttons = document.querySelectorAll(".tab-btn");
-    const tabs = document.querySelectorAll(".tab-content");
-
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        tabs.forEach(tab => tab.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.add("active");
+      // TAB SWITCHING
+      const tabs = {
+        homeTab: showHome,
+        earnTab: showEarn,
+        friendsTab: showFriends,
+        leaderboardTab: showLeaderboard
+      };
+      Object.keys(tabs).forEach(id => {
+        document.getElementById(id).onclick = () => {
+          document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+          document.getElementById(id).classList.add("active");
+          tabs[id]();
+        };
       });
-    });
 
-    // Mock leaderboard data (you can replace with real API)
-    const leaderboardData = [
-      { name: "Ayub", coins: 120 },
-      { name: "Ali", coins: 95 },
-      { name: "Legend", coins: 60 },
-    ];
-
-    const list = document.getElementById("leaderList");
-    leaderboardData.forEach((p, i) => {
-      const li = document.createElement("li");
-      li.textContent = `${i + 1}. ${p.name} — ${p.coins} coins`;
-      list.appendChild(li);
-    });
-  </script>
-</body>
+      showHome();
+    </script>
+  </body>
 </html>
