@@ -1,126 +1,163 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rabbit Kingdom 🐇</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background: linear-gradient(135deg, #5b0fff, #9d4eff);
-        color: white;
-        text-align: center;
-        height: 100vh;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabbit Kingdom 🐇</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #5b0fff, #9d4eff);
+      color: white;
+      text-align: center;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
 
-      .container {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 20px;
-        border-radius: 20px;
-        width: 90%;
-        max-width: 400px;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-      }
+    /* Tabs at bottom */
+    .tab-bar {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      backdrop-filter: blur(10px);
+    }
 
-      h2 {
-        margin-top: 0;
-      }
+    .tab-bar button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      padding: 8px;
+    }
 
-      button {
-        background: #ffcc00;
-        border: none;
-        padding: 12px 25px;
-        border-radius: 15px;
-        font-size: 18px;
-        margin-top: 15px;
-        cursor: pointer;
-        transition: 0.2s;
-      }
+    .tab-bar button.active {
+      border-top: 2px solid #fff;
+      font-weight: bold;
+    }
 
-      button:hover {
-        transform: scale(1.05);
-        background: #ffe14a;
-      }
+    .tab-content {
+      flex: 1;
+      padding: 20px;
+      display: none;
+    }
 
-      .leaderboard {
-        text-align: left;
-        margin-top: 20px;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 10px;
-        border-radius: 10px;
-      }
+    .tab-content.active {
+      display: block;
+    }
 
-      .leaderboard h3 {
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>🐇 Rabbit Kingdom</h2>
-      <p id="userInfo">Connecting to Telegram...</p>
-      <p id="coins">💰 Coins: 0</p>
-      <button id="earnBtn">Tap to Earn +10</button>
+    .btn {
+      background-color: white;
+      color: #5b0fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
 
-      <div class="leaderboard">
-        <h3>🏆 Leaderboard</h3>
-        <ul id="leaderList"></ul>
-      </div>
-    </div>
+    .btn:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <div id="home" class="tab-content active">
+    <h2>🐇 Rabbit Kingdom</h2>
+    <p id="userInfo">Loading Telegram data...</p>
+    <p id="coins">💰 Coins: 0</p>
+  </div>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script>
-      const tg = window.Telegram.WebApp;
-      tg.expand();
+  <div id="earn" class="tab-content">
+    <h2>🎯 Earn Coins</h2>
+    <p>Tap the button below to earn 10 coins!</p>
+    <button class="btn" id="earnBtn">Tap to Earn</button>
+  </div>
 
-      const user = tg.initDataUnsafe?.user;
-      const earnBtn = document.getElementById("earnBtn");
-      const coinsDisplay = document.getElementById("coins");
-      const userInfo = document.getElementById("userInfo");
-      const leaderboardList = document.getElementById("leaderList");
+  <div id="friends" class="tab-content">
+    <h2>👥 Friends</h2>
+    <p>Invite friends using your referral link:</p>
+    <p id="refLink"></p>
+  </div>
 
-      let userKey, userData, leaderboard;
+  <div id="leaderboard" class="tab-content">
+    <h2>🏆 Leaderboard</h2>
+    <ul id="leaderList"></ul>
+  </div>
 
-      if (user) {
-        userKey = "user_" + user.id;
-        userInfo.innerText = `Hello, ${user.first_name} (@${user.username || "unknown"})`;
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="home">Home</button>
+    <button class="tab-btn" data-tab="earn">Earn</button>
+    <button class="tab-btn" data-tab="friends">Friends</button>
+    <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+  </div>
 
-        // Load data
-        userData = JSON.parse(localStorage.getItem(userKey)) || { coins: 0, name: user.first_name };
-        leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || {};
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
 
-        updateDisplay();
-      } else {
-        userInfo.innerText = "Unable to fetch Telegram user 😢";
-        earnBtn.disabled = true;
-      }
+    const user = tg.initDataUnsafe?.user;
+    const userId = user?.id || Math.floor(Math.random() * 10000);
+    let coins = parseInt(localStorage.getItem("coins") || "0");
 
-      function updateDisplay() {
-        coinsDisplay.innerText = `💰 Coins: ${userData.coins}`;
-        leaderboard[user.username || user.id] = userData.coins;
-        localStorage.setItem(userKey, JSON.stringify(userData));
-        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
-        updateLeaderboard();
-      }
+    // Display user info
+    if (user) {
+      document.getElementById("userInfo").innerText =
+        `Hello, ${user.first_name} (@${user.username || "guest"})`;
+    } else {
+      document.getElementById("userInfo").innerText = "Unable to fetch user.";
+    }
 
-      function updateLeaderboard() {
-        const sorted = Object.entries(leaderboard)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5);
-        leaderboardList.innerHTML = sorted
-          .map(([name, points], i) => `<li>${i + 1}. ${name}: ${points} 💰</li>`)
-          .join("");
-      }
+    // Load coins
+    document.getElementById("coins").innerText = "💰 Coins: " + coins;
 
-      earnBtn.onclick = () => {
-        userData.coins += 10;
-        updateDisplay();
-      };
-    </script>
-  </body>
+    // Earn coins
+    document.getElementById("earnBtn").addEventListener("click", () => {
+      coins += 10;
+      localStorage.setItem("coins", coins);
+      document.getElementById("coins").innerText = "💰 Coins: " + coins;
+      tg.HapticFeedback.notificationOccurred("success");
+    });
+
+    // Referral link
+    const link = `https://t.me/Rabbitkingdom_bot?start=${userId}`;
+    document.getElementById("refLink").innerText = link;
+
+    // Tabs switching
+    const buttons = document.querySelectorAll(".tab-btn");
+    const tabs = document.querySelectorAll(".tab-content");
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        buttons.forEach(b => b.classList.remove("active"));
+        tabs.forEach(tab => tab.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // Mock leaderboard data (you can replace with real API)
+    const leaderboardData = [
+      { name: "Ayub", coins: 120 },
+      { name: "Ali", coins: 95 },
+      { name: "Legend", coins: 60 },
+    ];
+
+    const list = document.getElementById("leaderList");
+    leaderboardData.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${i + 1}. ${p.name} — ${p.coins} coins`;
+      list.appendChild(li);
+    });
+  </script>
+</body>
 </html>
