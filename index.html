@@ -1,71 +1,73 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Rabbits</title>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rabbit Kingdom 🐇</title>
     <style>
       body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #5b0fff, #9d4eff);
+        color: white;
+        text-align: center;
+        height: 100vh;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 100vh;
-        background: #f0f0f0;
-        font-family: sans-serif;
-        flex-direction: column;
       }
-      button {
-        margin-top: 20px;
-        padding: 10px 20px;
-        background: #5b0fff;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 16px;
+      .container {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 20px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      }
+      h2 {
+        margin-top: 0;
       }
     </style>
   </head>
   <body>
-    <div id="ton-connect"></div>
-    <button id="connect-btn">Connect Wallet</button>
+    <div class="container">
+      <h2>Welcome to Rabbit Kingdom 🐇</h2>
+      <p id="userInfo">Connecting to Telegram...</p>
+      <p id="coins">💰 Coins: 0</p>
+    </div>
 
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-      const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://ayub131132.github.io/Rabbitkingdom/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect'
-      });
+      const tg = window.Telegram.WebApp;
 
-      const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 60,
-        messages: [
-          {
-            address: "UQBLlT3-xptbdwiGVg30TotS_3Ck5z-Z8UaPfAIwLo-91cs5",
-            amount: "200000000"
-          }
-        ]
-      };
+      // Automatically expand the mini app to full view
+      tg.expand();
 
-      async function sendTransactionHandler() {
-        try {
-          const result = await tonConnectUI.sendTransaction(transaction);
-          console.log("Transaction sent:", result);
-        } catch (error) {
-          console.error("Transaction failed:", error);
-        }
+      // Get Telegram user data automatically
+      const user = tg.initDataUnsafe?.user;
+
+      if (user) {
+        // Display Telegram user details
+        document.getElementById("userInfo").innerText =
+          `Hello, ${user.first_name} ${user.last_name || ''} (@${user.username || 'unknown'})`;
+      } else {
+        document.getElementById("userInfo").innerText = "Unable to fetch Telegram user 😢";
       }
 
-      tonConnectUI.setOptions({
-        actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Rabbitkingdom_bot'
-        }
-      });
+      // Example: send data to your backend (optional)
+      async function sendUserDataToBackend() {
+        await fetch("https://your-backend-url.com/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: user.id,
+            username: user.username,
+            name: user.first_name,
+          }),
+        });
+      }
 
-      document.getElementById('connect-btn').onclick = async () => {
-        try {
-          await tonConnectUI.openModal();
-        } catch (error) {
-          console.error("Error connecting to wallet:", error);
-        }
-      };
+      if (user) sendUserDataToBackend();
     </script>
   </body>
 </html>
