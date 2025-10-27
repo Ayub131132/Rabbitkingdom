@@ -11,63 +11,116 @@
         color: white;
         text-align: center;
         height: 100vh;
+        margin: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
       }
+
       .container {
         background: rgba(255, 255, 255, 0.15);
         padding: 20px;
         border-radius: 20px;
         width: 90%;
         max-width: 400px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
       }
+
       h2 {
         margin-top: 0;
+      }
+
+      button {
+        background: #ffcc00;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 15px;
+        font-size: 18px;
+        margin-top: 15px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+        background: #ffe14a;
+      }
+
+      .leaderboard {
+        text-align: left;
+        margin-top: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      .leaderboard h3 {
+        text-align: center;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h2>Welcome to Rabbit Kingdom 🐇</h2>
+      <h2>🐇 Rabbit Kingdom</h2>
       <p id="userInfo">Connecting to Telegram...</p>
       <p id="coins">💰 Coins: 0</p>
+      <button id="earnBtn">Tap to Earn +10</button>
+
+      <div class="leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <ul id="leaderList"></ul>
+      </div>
     </div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
       const tg = window.Telegram.WebApp;
-
-      // Automatically expand the mini app to full view
       tg.expand();
 
-      // Get Telegram user data automatically
       const user = tg.initDataUnsafe?.user;
+      const earnBtn = document.getElementById("earnBtn");
+      const coinsDisplay = document.getElementById("coins");
+      const userInfo = document.getElementById("userInfo");
+      const leaderboardList = document.getElementById("leaderList");
+
+      let userKey, userData, leaderboard;
 
       if (user) {
-        // Display Telegram user details
-        document.getElementById("userInfo").innerText =
-          `Hello, ${user.first_name} ${user.last_name || ''} (@${user.username || 'unknown'})`;
+        userKey = "user_" + user.id;
+        userInfo.innerText = `Hello, ${user.first_name} (@${user.username || "unknown"})`;
+
+        // Load data
+        userData = JSON.parse(localStorage.getItem(userKey)) || { coins: 0, name: user.first_name };
+        leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || {};
+
+        updateDisplay();
       } else {
-        document.getElementById("userInfo").innerText = "Unable to fetch Telegram user 😢";
+        userInfo.innerText = "Unable to fetch Telegram user 😢";
+        earnBtn.disabled = true;
       }
 
-      // Example: send data to your backend (optional)
-      async function sendUserDataToBackend() {
-        await fetch("https://your-backend-url.com/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: user.id,
-            username: user.username,
-            name: user.first_name,
-          }),
-        });
+      function updateDisplay() {
+        coinsDisplay.innerText = `💰 Coins: ${userData.coins}`;
+        leaderboard[user.username || user.id] = userData.coins;
+        localStorage.setItem(userKey, JSON.stringify(userData));
+        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+        updateLeaderboard();
       }
 
-      if (user) sendUserDataToBackend();
+      function updateLeaderboard() {
+        const sorted = Object.entries(leaderboard)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+        leaderboardList.innerHTML = sorted
+          .map(([name, points], i) => `<li>${i + 1}. ${name}: ${points} 💰</li>`)
+          .join("");
+      }
+
+      earnBtn.onclick = () => {
+        userData.coins += 10;
+        updateDisplay();
+      };
     </script>
   </body>
 </html>
