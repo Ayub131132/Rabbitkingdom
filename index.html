@@ -11,11 +11,16 @@
     <div id="ton-connect"></div>
     <script>
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://<YOUR_APP_URL>/tonconnect-manifest.json',
+        manifestUrl: 'https://ayub131132.github.io/Rabbitkingdom/tonconnect-manifest.json',
         buttonRootId: 'ton-connect'
     });
 </script>
 <script>
+  tonConnectUI.setOptions({
+  actionsConfiguration: {
+    twaReturnUrl: 'https://t.me/Rabbitkingdom_bot'
+  }
+});
     async function connectToWallet() {
         // Open the connect modal programmatically
         await tonConnectUI.openModal();
